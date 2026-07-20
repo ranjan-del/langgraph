@@ -8,8 +8,9 @@ state graph up through conditional routing, memory/persistence, human-in-the-loo
 supervisor/planner/reflection orchestration, multi-agent collaboration, tool calling, and
 streaming.
 
-> Status: **scaffold only.** Every `graph.py` is a skeleton with `# TODO:` markers that map
-> back to the build checklist. No feature logic is implemented yet.
+> Status: **working.** All ten patterns are implemented and each `graph.py` runs end to end.
+> Every example is fully offline and deterministic — no model provider, no API keys, no network.
+> A pytest suite covers every pattern and runs in CI on each push.
 
 ## Architecture
 
@@ -30,7 +31,7 @@ graph TD
     A --> B --> C --> D
     D --> E --> F --> G
     G --> H --> I --> J
-    Deps[(requirements.txt<br/>langgraph + langchain)] -.-> Reference
+    Deps[(requirements.txt<br/>langgraph)] -.-> Reference
 ```
 
 Each pattern builds on concepts introduced by the ones before it, but every folder can be
@@ -92,12 +93,14 @@ source .venv/bin/activate        # Windows: .venv\Scripts\activate
 # 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. Provide API keys
-cp .env.example .env             # then edit .env with your keys
-
-# 5. Run any pattern
+# 4. Run any pattern (no API keys required)
 python simple-graph/graph.py
+
+# 5. Run the test suite
+pytest -q
 ```
+
+No API keys are required — every pattern runs fully offline and deterministically.
 
 ## Features
 
@@ -112,13 +115,25 @@ python simple-graph/graph.py
 - **tool-calling** — bind tools to a model and route through a `ToolNode`.
 - **streaming** — stream tokens and intermediate graph events to the caller.
 
+## Testing
+
+Every pattern has at least one deterministic test that runs its graph and asserts
+on the output. Run the full suite from the repo root:
+
+```bash
+pytest -q
+```
+
+Continuous integration runs the same suite on Python 3.11 and 3.12 via
+[`.github/workflows/ci.yml`](./.github/workflows/ci.yml) on every push and pull request.
+
 ## Screenshots
 
-_Coming soon_
+_Not captured (headless build)._
 
 ## Demo GIF
 
-_Coming soon_
+_Not captured (headless build)._
 
 ## API Documentation
 
@@ -138,15 +153,16 @@ The public entry point of each pattern is its compiled graph.
 | tool-calling | `graph.py:build_graph()` | Model + ToolNode |
 | streaming | `graph.py:build_graph()` | Streaming events |
 
-_Full per-pattern API docs: Coming soon_
+Each pattern folder also has its own `README.md` describing that pattern's architecture,
+flow, and explanation.
 
 ## Future Improvements
 
-- Implement the runnable logic behind each `graph.py` stub.
-- Add per-pattern unit tests and a shared test harness.
-- Add screenshots and demo GIFs for each pattern.
-- Provide a shared `.env.example` and config loader utility.
+- Add optional "live" variants that swap the deterministic stand-ins for a real
+  model provider (loaded from `.env`) while keeping the offline default.
 - Add a notebook variant for each pattern for interactive exploration.
+- Render each pattern's flow diagram as an image and embed it in the folder README.
+- Expand the tool-calling example with additional tools and multi-step reasoning.
 
 ## License
 

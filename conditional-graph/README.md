@@ -15,8 +15,8 @@ runs next. This is how LangGraph expresses branching and looping.
 ```mermaid
 graph TD
     START((START)) --> R{route}
-    R -->|case A| A[branch_a]
-    R -->|case B| B[branch_b]
+    R -->|even| A[branch_even]
+    R -->|odd| B[branch_odd]
     A --> END((END))
     B --> END((END))
 ```

@@ -1,45 +1,67 @@
 """multi-agent — collaborating agents with handoffs.
 
-Scaffold only. See MEMORY.md: "multi-agent" in the Goal section.
+Two agents share a message list: a researcher gathers facts, then hands off to
+a writer that composes a summary from those facts. Fully offline and
+deterministic — no model calls, no API keys.
 """
 
-from typing import TypedDict
+import operator
+from typing import Annotated, TypedDict
 
-# TODO: from langgraph.graph import StateGraph, START, END
+from langgraph.graph import StateGraph, START, END
+
+# A tiny deterministic "knowledge base" the researcher draws from.
+_FACTS = {
+    "python": ["created by Guido van Rossum", "released in 1991", "dynamically typed"],
+    "langgraph": ["builds stateful graphs", "supports conditional edges"],
+}
 
 
 class State(TypedDict):
-    # TODO: define shared fields; e.g. an appended message list.
-    messages: list
+    topic: str
+    messages: Annotated[list, operator.add]
+    facts: list
+    summary: str
 
 
 def agent_researcher(state: State) -> dict:
-    # TODO: implement the researcher agent role.
-    raise NotImplementedError("agent_researcher is a scaffold stub")
+    """Researcher: look up facts about the topic and record them."""
+    facts = _FACTS.get(state["topic"].lower(), ["no facts found"])
+    return {
+        "facts": facts,
+        "messages": [f"researcher: found {len(facts)} fact(s)"],
+    }
 
 
 def agent_writer(state: State) -> dict:
-    # TODO: implement the writer agent role.
-    raise NotImplementedError("agent_writer is a scaffold stub")
+    """Writer: compose a one-line summary from the researcher's facts."""
+    summary = f"{state['topic']}: " + "; ".join(state["facts"])
+    return {"summary": summary, "messages": ["writer: summary composed"]}
 
 
 def route_handoff(state: State) -> str:
-    """Decide the next agent (or finish) based on shared state."""
-    # TODO: return "agent_researcher" | END
-    raise NotImplementedError("route_handoff is a scaffold stub")
+    """After the writer produces a summary, the collaboration is finished."""
+    return END if state.get("summary") else "agent_writer"
 
 
 def build_graph():
     """Build and compile the multi-agent graph."""
-    # TODO: builder = StateGraph(State)
-    # TODO: builder.add_node("agent_researcher", agent_researcher)
-    # TODO: builder.add_node("agent_writer", agent_writer)
-    # TODO: builder.add_edge(START, "agent_researcher")
-    # TODO: builder.add_edge("agent_researcher", "agent_writer")
-    # TODO: builder.add_conditional_edges("agent_writer", route_handoff)
-    # TODO: return builder.compile()
-    raise NotImplementedError("build_graph is a scaffold stub")
+    builder = StateGraph(State)
+    builder.add_node("agent_researcher", agent_researcher)
+    builder.add_node("agent_writer", agent_writer)
+    builder.add_edge(START, "agent_researcher")
+    builder.add_edge("agent_researcher", "agent_writer")
+    builder.add_conditional_edges(
+        "agent_writer", route_handoff, {"agent_writer": "agent_writer", END: END}
+    )
+    return builder.compile()
 
 
 if __name__ == "__main__":
-    print("multi-agent scaffold — not yet implemented")
+    graph = build_graph()
+    result = graph.invoke(
+        {"topic": "python", "messages": [], "facts": [], "summary": ""}
+    )
+    for msg in result["messages"]:
+        print(" ", msg)
+    print("multi-agent summary:", result["summary"])

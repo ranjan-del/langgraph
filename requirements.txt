@@ -1,10 +1,13 @@
-# Shared dependencies for the LangGraph reference patterns.
-# Text manifest only — install with: pip install -r requirements.txt
-# (Do not pin exact versions until the patterns are implemented.)
+# Dependencies for the LangGraph reference patterns.
+# Install with: pip install -r requirements.txt
+#
+# Every pattern runs fully offline and deterministically: no model provider
+# packages and no API keys are required.
 
-langgraph
-langchain
+langgraph>=1.2,<2
+langgraph-checkpoint>=4.1,<5
+langgraph-prebuilt>=1.1,<2
+langchain-core>=1.4,<2
 
-# TODO: add model/provider packages once patterns are implemented
-#       (e.g. langchain-openai / langchain-anthropic) per MEMORY.md:
-#       "Shared env/deps (API keys via .env)".
+# Testing
+pytest>=8,<10

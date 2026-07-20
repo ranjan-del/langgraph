@@ -1,45 +1,49 @@
 """conditional-graph — routing with conditional edges.
 
-Scaffold only. See MEMORY.md: "conditionals" in the Goal section.
+A router function inspects the state and picks one of two branches. Runs fully
+offline and deterministically — no model calls, no API keys.
 """
 
 from typing import TypedDict
 
-# TODO: from langgraph.graph import StateGraph, START, END
+from langgraph.graph import StateGraph, START, END
 
 
 class State(TypedDict):
-    # TODO: define fields; include whatever the router keys off of.
     value: int
+    label: str
 
 
-def branch_a(state: State) -> dict:
-    # TODO: implement branch A.
-    raise NotImplementedError("branch_a is a scaffold stub")
+def branch_even(state: State) -> dict:
+    """Handle the even branch."""
+    return {"label": f"{state['value']} is even"}
 
 
-def branch_b(state: State) -> dict:
-    # TODO: implement branch B.
-    raise NotImplementedError("branch_b is a scaffold stub")
+def branch_odd(state: State) -> dict:
+    """Handle the odd branch."""
+    return {"label": f"{state['value']} is odd"}
 
 
 def route(state: State) -> str:
     """Return the name of the next node based on state."""
-    # TODO: return "branch_a" or "branch_b" depending on state.
-    raise NotImplementedError("route is a scaffold stub")
+    return "branch_even" if state["value"] % 2 == 0 else "branch_odd"
 
 
 def build_graph():
     """Build and compile the conditional graph."""
-    # TODO: builder = StateGraph(State)
-    # TODO: builder.add_node("branch_a", branch_a)
-    # TODO: builder.add_node("branch_b", branch_b)
-    # TODO: builder.add_conditional_edges(START, route)
-    # TODO: builder.add_edge("branch_a", END)
-    # TODO: builder.add_edge("branch_b", END)
-    # TODO: return builder.compile()
-    raise NotImplementedError("build_graph is a scaffold stub")
+    builder = StateGraph(State)
+    builder.add_node("branch_even", branch_even)
+    builder.add_node("branch_odd", branch_odd)
+    builder.add_conditional_edges(
+        START, route, {"branch_even": "branch_even", "branch_odd": "branch_odd"}
+    )
+    builder.add_edge("branch_even", END)
+    builder.add_edge("branch_odd", END)
+    return builder.compile()
 
 
 if __name__ == "__main__":
-    print("conditional-graph scaffold — not yet implemented")
+    graph = build_graph()
+    for value in (4, 7):
+        result = graph.invoke({"value": value, "label": ""})
+        print("conditional-graph result:", result)

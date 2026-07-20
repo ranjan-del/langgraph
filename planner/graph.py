@@ -1,47 +1,69 @@
 """planner — plan-and-execute.
 
-Scaffold only. See MEMORY.md: "supervisor/planner/reflection" in the Goal.
+A planner node decomposes an objective into an ordered list of steps; an
+executor runs one step per turn and loops until the plan is exhausted. Fully
+offline and deterministic — no model calls, no API keys.
 """
 
-from typing import TypedDict
+import operator
+from typing import Annotated, TypedDict
 
-# TODO: from langgraph.graph import StateGraph, START, END
+from langgraph.graph import StateGraph, START, END
 
 
 class State(TypedDict):
-    # TODO: define fields; e.g. objective, plan (list of steps), results.
     objective: str
     plan: list
-    results: list
+    cursor: int
+    results: Annotated[list, operator.add]
+
+
+# A tiny deterministic "planner": maps known objectives to concrete steps.
+_PLAYBOOK = {
+    "make tea": ["boil water", "add tea leaves", "steep 3 min", "pour"],
+}
 
 
 def planner(state: State) -> dict:
-    # TODO: decompose the objective into an ordered list of steps.
-    raise NotImplementedError("planner is a scaffold stub")
+    """Decompose the objective into an ordered list of steps."""
+    steps = _PLAYBOOK.get(
+        state["objective"].lower(),
+        [f"analyze '{state['objective']}'", "act", "verify"],
+    )
+    return {"plan": steps, "cursor": 0}
 
 
 def executor(state: State) -> dict:
-    # TODO: execute the current step and record its result.
-    raise NotImplementedError("executor is a scaffold stub")
+    """Execute the step at the current cursor and advance."""
+    idx = state["cursor"]
+    step = state["plan"][idx]
+    return {"cursor": idx + 1, "results": [f"step {idx + 1}: done '{step}'"]}
 
 
 def route_after_step(state: State) -> str:
-    """Decide whether to continue executing, replan, or finish."""
-    # TODO: return "executor" | "planner" | END
-    raise NotImplementedError("route_after_step is a scaffold stub")
+    """Continue executing while steps remain, otherwise finish."""
+    return "executor" if state["cursor"] < len(state["plan"]) else END
 
 
 def build_graph():
     """Build and compile the plan-and-execute graph."""
-    # TODO: builder = StateGraph(State)
-    # TODO: builder.add_node("planner", planner)
-    # TODO: builder.add_node("executor", executor)
-    # TODO: builder.add_edge(START, "planner")
-    # TODO: builder.add_edge("planner", "executor")
-    # TODO: builder.add_conditional_edges("executor", route_after_step)
-    # TODO: return builder.compile()
-    raise NotImplementedError("build_graph is a scaffold stub")
+    builder = StateGraph(State)
+    builder.add_node("planner", planner)
+    builder.add_node("executor", executor)
+    builder.add_edge(START, "planner")
+    builder.add_edge("planner", "executor")
+    builder.add_conditional_edges(
+        "executor", route_after_step, {"executor": "executor", END: END}
+    )
+    return builder.compile()
 
 
 if __name__ == "__main__":
-    print("planner scaffold — not yet implemented")
+    graph = build_graph()
+    result = graph.invoke(
+        {"objective": "make tea", "plan": [], "cursor": 0, "results": []}
+    )
+    print("planner objective:", result["objective"])
+    print("planner plan:", result["plan"])
+    for line in result["results"]:
+        print(" ", line)

@@ -14,8 +14,8 @@ done. This is the classic orchestrator pattern for coordinating multiple capabil
 ```mermaid
 graph TD
     START((START)) --> S{supervisor}
-    S -->|worker_a| A[worker_a]
-    S -->|worker_b| B[worker_b]
+    S -->|worker_upper| A[worker_upper]
+    S -->|worker_reverse| B[worker_reverse]
     S -->|FINISH| END((END))
     A --> S
     B --> S

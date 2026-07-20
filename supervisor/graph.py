@@ -1,53 +1,73 @@
 """supervisor — supervisor routing to worker nodes.
 
-Scaffold only. See MEMORY.md: "supervisor/planner/reflection" in the Goal.
+A supervisor node inspects the remaining work and dispatches to a specialized
+worker; each worker returns control to the supervisor, which eventually signals
+FINISH. Fully offline and deterministic — no model calls, no API keys.
 """
 
-from typing import TypedDict
+import operator
+from typing import Annotated, TypedDict
 
-# TODO: from langgraph.graph import StateGraph, START, END
+from langgraph.graph import StateGraph, START, END
 
 
 class State(TypedDict):
-    # TODO: define fields; e.g. task, accumulated results, next worker.
-    task: str
-    results: list
+    text: str
+    pending: list            # worker names still to run, in order
+    results: Annotated[list, operator.add]
+    next: str
 
 
 def supervisor(state: State) -> dict:
-    # TODO: decide which worker runs next (or signal FINISH).
-    raise NotImplementedError("supervisor is a scaffold stub")
+    """Pick the next worker from the pending queue, or FINISH when empty."""
+    pending = state["pending"]
+    if not pending:
+        return {"next": "FINISH"}
+    return {"next": pending[0], "pending": pending[1:]}
 
 
-def worker_a(state: State) -> dict:
-    # TODO: implement worker A capability.
-    raise NotImplementedError("worker_a is a scaffold stub")
+def worker_upper(state: State) -> dict:
+    """Worker A: uppercase the text."""
+    result = state["text"].upper()
+    return {"text": result, "results": [f"upper -> {result}"]}
 
 
-def worker_b(state: State) -> dict:
-    # TODO: implement worker B capability.
-    raise NotImplementedError("worker_b is a scaffold stub")
+def worker_reverse(state: State) -> dict:
+    """Worker B: reverse the text."""
+    result = state["text"][::-1]
+    return {"text": result, "results": [f"reverse -> {result}"]}
 
 
 def route_supervisor(state: State) -> str:
-    """Return the next worker name, or END sentinel, based on supervisor state."""
-    # TODO: return "worker_a" | "worker_b" | END
-    raise NotImplementedError("route_supervisor is a scaffold stub")
+    """Return the next worker name, or the END sentinel."""
+    return END if state["next"] == "FINISH" else state["next"]
 
 
 def build_graph():
     """Build and compile the supervisor graph."""
-    # TODO: builder = StateGraph(State)
-    # TODO: builder.add_node("supervisor", supervisor)
-    # TODO: builder.add_node("worker_a", worker_a)
-    # TODO: builder.add_node("worker_b", worker_b)
-    # TODO: builder.add_edge(START, "supervisor")
-    # TODO: builder.add_conditional_edges("supervisor", route_supervisor)
-    # TODO: builder.add_edge("worker_a", "supervisor")
-    # TODO: builder.add_edge("worker_b", "supervisor")
-    # TODO: return builder.compile()
-    raise NotImplementedError("build_graph is a scaffold stub")
+    builder = StateGraph(State)
+    builder.add_node("supervisor", supervisor)
+    builder.add_node("worker_upper", worker_upper)
+    builder.add_node("worker_reverse", worker_reverse)
+    builder.add_edge(START, "supervisor")
+    builder.add_conditional_edges(
+        "supervisor",
+        route_supervisor,
+        {"worker_upper": "worker_upper", "worker_reverse": "worker_reverse", END: END},
+    )
+    builder.add_edge("worker_upper", "supervisor")
+    builder.add_edge("worker_reverse", "supervisor")
+    return builder.compile()
 
 
 if __name__ == "__main__":
-    print("supervisor scaffold — not yet implemented")
+    graph = build_graph()
+    result = graph.invoke(
+        {
+            "text": "hello",
+            "pending": ["worker_upper", "worker_reverse"],
+            "results": [],
+            "next": "",
+        }
+    )
+    print("supervisor result:", result)
