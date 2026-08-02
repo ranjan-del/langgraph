@@ -15,16 +15,24 @@ edit, or approve before execution continues.
 ```mermaid
 graph TD
     START((START)) --> P[prepare_action]
-    P --> H{{human review}}
-    H -->|approve| A[execute_action]
-    H -->|reject / edit| P
-    A --> END((END))
+    P --> H{{"pause: interrupt_before<br/>execute_action"}}
+    H -->|"update_state(approved=True)"| A[execute_action]
+    H -->|"update_state(approved=False)"| A
+    A --> O{approved?}
+    O -->|yes| X[outcome: EXECUTED]
+    O -->|no| C[outcome: CANCELLED]
+    X --> END((END))
+    C --> END((END))
 ```
+
+Note that the pause is not a graph edge. The only edges are
+`START -> prepare_action -> execute_action -> END`; the diamond is where the compiled graph
+hands control back to the caller because of `interrupt_before=["execute_action"]`.
 
 ## Explanation
 
 Some actions should not run autonomously. LangGraph supports this by pausing a run at a
 designated point and returning control to the caller. Because state is checkpointed, the run
 can sit paused indefinitely; when resumed with the same thread id, it picks up exactly where
-it left off — optionally with human-modified state. This turns an autonomous graph into a
+it left off, optionally with human-modified state. This turns an autonomous graph into a
 supervised one without rewriting its logic.
