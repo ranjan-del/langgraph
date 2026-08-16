@@ -1,5 +1,15 @@
 # langgraph
 
+| | |
+|---|---|
+| **What it is** | Ten LangGraph patterns, one folder per pattern, built to be read as much as run |
+| **Stack** | Python · LangGraph · deterministic stand-ins instead of a model provider |
+| **Run it** | `python <pattern>/graph.py` for any of the ten; no API key |
+| **Tests** | 32 (pytest), run in CI on every push |
+| **Read first** | `simple-graph/`, then `conditional-graph/`, then `human-approval/` |
+
+**Why it is written this way:** each folder holds one self-contained `graph.py` and a README with a mermaid diagram of the flow, so a pattern can be understood without tracing shared helpers. Running offline and deterministically means a graph's behaviour is a property of its structure rather than of what a model happened to say that day.
+
 A teaching collection of ten LangGraph patterns, one folder per pattern, built to be read as
 much as run. Every folder holds a single self-contained `graph.py` and a README that explains
 the architecture, draws the flow as a mermaid diagram, and walks through the idea. The whole
